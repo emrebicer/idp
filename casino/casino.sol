@@ -1,48 +1,62 @@
 pragma solidity >=0.8.2 <0.9.0;
 
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 contract Gambling {
 
-    int fund;
+    IERC20 public USDC;
 
     address public owner;
 
-    // Constructor is "payable" so it can receive the initial funding of 30, 
-    constructor() payable {
-        require(msg.value == 30 ether, "30 ether initial funding required");
-        /* Set the owner to the creator of this contract */
+    constructor(address USDCAddres) {
+        // Set the owner to the creator of this contract
         owner = msg.sender;
+
+        USDC = IERC20(USDCAddres);
     }
 
-
-    function bet() public payable {
+    function betUSDC(uint amount) public {
         // Get the received amount
-        uint amount = msg.value;
         uint reward = amount * 2;
 
         // Make sure there is a positive bet
         require(amount > 0, "there has to be a positive bet amount");
 
         // Make sure we have enough funds
-        require(getBalance() >= reward, "there is not enough funds for this bet");
+        require(getUSDCBalance() >= reward, "there is not enough USDC for this bet");
+
+        // Collect the bet amount
+        USDC.transferFrom(msg.sender, address(this), amount);
 
         // Get random value to see if the gambler wins
         uint random = generateRandomNumber(100);
 
         if (random > 50) {
             // User loses, 
-            emit gamblerLost(msg.sender, amount);
+            emit gamblerLostUSDC(msg.sender, amount);
         } else {
             // User wins
-            emit gamblerWon(msg.sender, reward);
-            payable(msg.sender).transfer(reward);
+            emit gamblerWonUSDC(msg.sender, reward);
+            USDC.transferFrom(address(this), msg.sender, reward);
         }
     }
 
-
-    function getBalance() private view returns (uint) {
-        return address(this).balance;
+    function getUSDCBalance() private view returns (uint) {
+        return USDC.balanceOf(address(this));
     }
 
+    function depositUSDCFunds(uint amount) public {
+        require(amount > 0, "you must specify a positive USDC value to deposit");
+
+        USDC.transferFrom(msg.sender, address(this), amount);
+    }
+
+    function withdrawUSDCFunds(uint amount) public {
+        require(msg.sender == owner, "only the owner can withdraw funds");
+        require(getUSDCBalance() >= amount, "there is not enough USDC funds for the given amount");
+
+        USDC.transferFrom(address(this), msg.sender, amount);
+    }
 
     // Generate an integer between 0 and upperLimit
     function generateRandomNumber(uint upperLimit) private returns (uint) {
@@ -50,19 +64,10 @@ contract Gambling {
         return 10;
     }
 
-    function depositFunds() public payable {
-        require(msg.value > 0, "you must specify a positive ETH value to deposit");
-    }
-
-    function withdrawFunds(uint amount) public {
-        require(msg.sender == owner, "only the owner can withdraw funds");
-        require(getBalance() >= amount, "there is not enough funds for the given amount");
-
-        payable(msg.sender).transfer(amount);
-    }
-
-
     // Event definitions for logs
-    event gamblerLost(address gambler, uint amount);
-    event gamblerWon(address gambler, uint reward);
+    event gamblerLostDaiToken(address gambler, uint amount);
+    event gamblerWonDaiToken(address gambler, uint reward);
+
+    event gamblerLostUSDC(address gambler, uint amount);
+    event gamblerWonUSDC(address gambler, uint reward);
 }
