@@ -2,5 +2,8 @@
   "dependencies": {
     "@openzeppelin/cli": "^2.8.2",
     "@openzeppelin/contracts": "^3.4.0"
+  },
+  "devDependencies": {
+    "hardhat": "^2.19.3"
   }
 }
