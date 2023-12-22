@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity >=0.8.2 <0.9.0;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -69,7 +70,7 @@ contract Gambling {
         require(amount > 0, "there has to be a positive bet amount");
 
         // Make sure we have enough funds
-        require(getDAI() >= reward, "there is not enough DAI for this bet");
+        require(getDAIBalance() >= reward, "there is not enough DAI for this bet");
 
         // Collect the bet amount
         DAI.transferFrom(msg.sender, address(this), amount);
@@ -107,9 +108,8 @@ contract Gambling {
 
 
     // Generate an integer between 0 and upperLimit
-    function generateRandomNumber(uint upperLimit) private returns (uint) {
-
-        return 10;
+    function generateRandomNumber(uint upperLimit) private pure returns (uint) {
+        return upperLimit;
     }
 
     // Event definitions for logs
