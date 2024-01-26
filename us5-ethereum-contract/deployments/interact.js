@@ -9,8 +9,6 @@ async function main() {
   wallet = await new ethers.Wallet(process.env.PRIVATE_KEY);
   signer = await wallet.connect(ethers.provider);
 
-
-  // usdc zksync l2 sepolia address
   let l1TokenAddress = '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238';
   let l1TokenName = 'USDC';
 
@@ -32,10 +30,6 @@ async function main() {
     11579208923731// l2txgasperpubdatabyte
   );
 
-  // strategy and organization is the department of the adviser but maybe it is also
-  // okay if the cocurse is from the same faculty
-
-  //console.debug(res);
   let out = await res.wait();
   console.debug(out);
 
