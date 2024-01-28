@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {L1ERC20Bridge} from "@matterlabs/zksync-contracts/l1/contracts/bridge/L1ERC20Bridge.sol";
+import {IL1Bridge} from "@matterlabs/zksync-contracts/l1/contracts/bridge/interfaces/IL1Bridge.sol";
 import {IMailbox} from "@matterlabs/zksync-contracts/l1/contracts/zksync/interfaces/IMailbox.sol";
 import {IAllowList} from "@matterlabs/zksync-contracts/l1/contracts/common/interfaces/IAllowList.sol";
 
@@ -39,6 +40,22 @@ contract TokenSender {
         IMailbox mailbox = IMailbox(mailboxAddr);
         IAllowList allowList = IAllowList(allowListAddr);
         L1ERC20Bridge bridge = new L1ERC20Bridge(mailbox, allowList);
+
+        bridge.deposit(l2Receiver, l1Token, amount, l2TxGasLimit, l2TxGasPerPubdataByte, address(this));
+    }
+
+    function transferTokensToL2WithBridge(
+            address bridgeAddr,
+            address l2Receiver,
+            address l1Token,
+            uint256 amount,
+            uint256 l2TxGasLimit,
+            uint256 l2TxGasPerPubdataByte
+        ) external onlyOwner {
+
+        require(amount > 0);
+
+        IL1Bridge bridge = IL1Bridge(bridgeAddr);
 
         bridge.deposit(l2Receiver, l1Token, amount, l2TxGasLimit, l2TxGasPerPubdataByte, address(this));
     }

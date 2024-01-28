@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "deploy-sepolia": "hardhat run deployments/deploy.js --network sepolia",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -14,9 +15,12 @@
     "@nomiclabs/hardhat-ethers": "^2.2.3",
     "@openzeppelin/contracts": "^4.6.0",
     "ethers": "^5.7.2",
-    "hardhat": "^2.19.4"
+    "hardhat": "^2.19.4",
+    "zksync-ethers": "5"
   },
   "dependencies": {
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.4.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
   }
 }
