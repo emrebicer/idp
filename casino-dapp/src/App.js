@@ -7,8 +7,8 @@ function App() {
 
   const casinoAddress = "0x331643e9db0c28bcbeeea4958054737594afc5b7";
 
-  const USDCAddress = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
-  const DAIAddress = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
+  const USDCAddress = "0x603Cff7a7FfB80a770176E548997Ca9DD85Ca0C4";
+  const DAIAddress = "0xE74b53d0f49Dac9e648331E3B721f7e99433d063";
 
   const [USDCAmount, setUSDCAmount] = useState("");
   const [DAIAmount, setDAIAmount] = useState("");
@@ -57,14 +57,15 @@ function App() {
       .connect(signer);
 
     try {
+      console.log(`bet amound: ${amount}, token addr: ${USDCAddress}`);
       let tx = await casinoContract.bet(amount, USDCAddress);
-      setLog(`${tx}`);
+      let res = await tx.wait();
+      setLog(`TX: ${tx} \n\n\nRes: ${res}`);
     } catch (e) {
       setLog(`${e}`);
     }
 
     updateTokenBalances();
-
   }
 
   useEffect(() => {
