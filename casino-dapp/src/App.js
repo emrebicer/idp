@@ -1,15 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { ethers } from "ethers";
 import 'bootstrap/dist/css/bootstrap.min.css';
-import 'jquery/dist/jquery.min.js'
-import 'bootstrap/dist/js/bootstrap.min.js'
-import ApproveToken from './components/ApproveToken';
 import RandomNumber from './components/RandomNumber';
 
-import { Container, Navbar, Nav, Button, OverlayTrigger, Tooltip, NavItem, NavLink } from 'react-bootstrap';
+import { Container, Navbar, Nav, OverlayTrigger, Tooltip, Spinner } from 'react-bootstrap';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
-
 
 
 const genericErc20Abi = require("./abis/ERC20_abi.json");
@@ -31,6 +27,7 @@ function App() {
   const [provider, setProvider] = useState(null);
 
   const [log, setLog] = useState(null);
+  const [txInProgress, setTxInProgress] = useState(false);
 
   let updateTokenBalances = async () => {
     let balance = await getERC20Amount(USDCAddress) || [0, 0];
@@ -51,28 +48,60 @@ function App() {
       }
 
       return [USDCBalance.toString(), casinoBalance.toString()]
-      //return ethers.formatUnits(USDCBalance, 6);
     }
   }
-  // let casinoBalance = async (tokenAddr) => {
-  //   const USDCContract = new ethers.Contract(tokenAddr, genericErc20Abi);
-  //   let USDCBalance = await USDCContract.balanceOf(casinoAddress);
 
-  //   return USDCBalance.toString();
-  // }
+  let approveToken = async (tokenAddress, balance) => {
+    if (!window.ethereum) {
+      alert('Please install MetaMask!');
+      return false;
+    }
+
+    setLog('Approval on progres...');
+
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      await provider.send("eth_requestAccounts", []); // Request account access if needed
+      const signer = await provider.getSigner();
+      const tokenContract = new ethers.Contract(tokenAddress, genericErc20Abi, signer);
+
+      setLog('Token approval transaction is in progress...');
+      const txResponse = await tokenContract.approve(casinoAddress, balance);
+      await txResponse.wait(); // Wait for the transaction to be mined
+      setLog('Approval successful');
+      return true;
+    } catch (error) {
+      console.error(error);
+      setLog('Approval failed');
+    }
+
+    return false;
+  }
 
   const betUSDC = async () => {
 
+    setTxInProgress(true);
     let amount = Number(enteredUSDCAmount);
 
     // Make sure amount is valid
     if (amount <= 0) {
       alert('Bet amount must be positive!');
+      setTxInProgress(false);
       return;
     }
 
     if (amount > await getERC20Amount(USDCAddress)) {
       alert('You don\'t have enought funds!');
+      setTxInProgress(false);
+      return;
+    }
+
+    // Approve the token spendings...
+    let approved = await approveToken(USDCAddress, amount)
+
+    if (!approved) {
+      alert("approve failed...");
+      setTxInProgress(false);
       return;
     }
 
@@ -84,11 +113,13 @@ function App() {
 
     try {
       console.log(`bet amound: ${amount}, token addr: ${USDCAddress}`);
-      console.log({ RandomNumber });
+      setLog('Casino bet transaction is in progress...');
       let tx = await casinoContract.bet(amount, USDCAddress);
       let res = await tx.wait();
-      setLog(`TX: ${tx} \n\n\nRes: ${res}`);
+      setTxInProgress(false);
+      setLog(`TX: ${JSON.stringify(tx)} \n\n\nRes: ${JSON.stringify(res)}`);
     } catch (e) {
+      setTxInProgress(false);
       setLog(`${e}`);
     }
 
@@ -118,25 +149,12 @@ function App() {
   );
 
   return (
-    /*
-    ------------------------------------------------------------------------------------------------------------------
-    ------------------------------------------------------------------------------------------------------------------
-    ------------------------------------------------------------------------------------------------------------------
-    ------------------------------------------------------------------------------------------------------------------
-    // HTML BURDAN BASLIYOR
-    ------------------------------------------------------------------------------------------------------------------
-    ------------------------------------------------------------------------------------------------------------------
-    ------------------------------------------------------------------------------------------------------------------
-    ------------------------------------------------------------------------------------------------------------------
-*/
-
 
     <div className='bg-dark text-white h-100'>
       <Navbar bg="dark" variant="dark" expand="lg">
         <Container >
           <Navbar.Brand>Casino Emre</Navbar.Brand>
           <Nav className="me-auto">
-            <NavLink><ApproveToken tokenAddress={USDCAddress} spenderAddress={casinoAddress} /></NavLink>
           </Nav>
           <OverlayTrigger
             placement="right"
@@ -153,7 +171,6 @@ function App() {
       </Navbar>
 
 
-
       <Container className="flex-grow-1 mt-5">
         <Row className='pt-5'>
           <Col className='text-center mt-5'><h2>W  E  L C  O  M  E</h2> T O</Col>
@@ -162,11 +179,24 @@ function App() {
           <Col className='text-center  '> <img src="https://raw.githubusercontent.com/emrebicer/idp/main/casino-dapp/src/assets/logo.png" alt="logo" width={300} /></Col>
         </Row>
 
+        {txInProgress && (
+            <Row className='mt-5 text-center '>
+              <Col>
+                <h5> 
+                <Spinner animation="border" role="status">
+                  <span className="visually-hidden">Loading...</span>
+                </Spinner>
+                &nbsp;&nbsp;&nbsp; Transaction in progres...
+                </h5>
+              </Col>
+            </Row>
+        )}
+
         <Row className='mt-5'>
           <Col className='text-center '> </Col>
           <Col className='text-center mt-5'>
-            <div class="input-group mb-3">
-              <input type="text" class="form-control form-control-lg" placeholder="Your Bet Amount" aria-label="Your Bet Amount" aria-describedby="basic-addon2"
+            <div className="input-group mb-3">
+              <input type="text" className="form-control form-control-lg" placeholder="Your Bet Amount" aria-label="Your Bet Amount" aria-describedby="basic-addon2"
                 value={enteredUSDCAmount}
                 onChange={(e) => {
                   const re = /^[0-9\b]+$/;
@@ -176,11 +206,11 @@ function App() {
                 }
                 }
               />
-              <span class="input-group-text bg-danger fw-bold text-light" id="basic-addon2">USDC</span>
+              <span className="input-group-text bg-danger fw-bold text-light" id="basic-addon2">USDC</span>
 
             </div>
             <div className='d-grid'>
-              <button type="button" className="btn btn-warning fw-bold " onClick={betUSDC}> Bet USDC! </button>
+              <button type="button" disabled={txInProgress} className="btn btn-warning fw-bold " onClick={betUSDC}> Bet USDC! </button>
 
             </div>
           </Col>
@@ -191,18 +221,16 @@ function App() {
         <Row className='mt-5 '>
           <Col>{log && (
 
-            <div class="alert alert-warning alert-dismissible fade show" role="alert">
-              <strong>Hey! </strong> Here is the log of the transaction!
+            <div className="alert alert-warning alert-dismissible fade show" role="alert">
+              <strong> Casino Log: </strong>
               <hr />
               <p className='text-break'> {log} </p>
-              <button onClick={() => { setLog(null) }} type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              <button onClick={() => { setLog(null) }} type="button" className="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
 
 
           )}</Col>
         </Row>
-
-
 
 
         <h3 className='invisible '> USDC (Token Address: {USDCAddress}) </h3>
@@ -223,11 +251,7 @@ function App() {
       </footer>
 
     </div>
-
-
   );
-
-
 }
 
 export default App;
